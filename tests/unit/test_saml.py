@@ -6,15 +6,13 @@ import urllib
 
 import pytest
 from mock import MagicMock, patch
-from ops.testing import Harness
 
-from charm import SamlIntegratorOperatorCharm
 from charm_state import CharmConfigInvalidError, CharmState
 from saml import SamlIntegrator
 
 
 @patch("urllib.request.urlopen")
-def test_saml_with_invalid_metadata(mock_urlopen):
+def test_saml_with_invalid_metadata(urlopen_mock):
     """
     arrange: mock the metadata contents so that they are invalid.
     act: access the metadata properties.
@@ -25,68 +23,46 @@ def test_saml_with_invalid_metadata(mock_urlopen):
     cm.getcode.return_value = 200
     cm.read.return_value = b"invalid"
     cm.__enter__.return_value = cm
-    mock_urlopen.return_value = cm
+    urlopen_mock.return_value = cm
 
-    harness = Harness(SamlIntegratorOperatorCharm)
-    harness.begin()
-    harness.disable_hooks()
     entity_id = "https://login.staging.ubuntu.com"
     metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_config(
-        {
+    charm = MagicMock(
+        config={
             "entity_id": entity_id,
             "metadata_url": metadata_url,
         }
     )
-    charm_state = CharmState.from_charm(harness.charm)
+    charm_state = CharmState.from_charm(charm)
     saml_integrator = SamlIntegrator(charm_state=charm_state)
-    assert saml_integrator.entity_id == entity_id
-    assert saml_integrator.metadata_url == metadata_url
-    try:
+    with pytest.raises(CharmConfigInvalidError):
         saml_integrator.certificates
-        assert False
-    except CharmConfigInvalidError:
-        assert True
-    try:
+    with pytest.raises(CharmConfigInvalidError):
         saml_integrator.endpoints
-        assert False
-    except CharmConfigInvalidError:
-        assert True
 
 
 @patch.object(urllib.request, "urlopen", side_effect=urllib.error.URLError("Error"))
-def test_saml_with_invalid_url(mock_urlopen):
+def test_saml_with_invalid_url(urlopen_mock):
     """
     arrange: mock the HTTP request for the metadata so that it fails.
     act: access the metadata properties.
     assert: a CharmConfigInvalidError exception is raised when attempting to access the
         properties read from the metadata.
     """
-    harness = Harness(SamlIntegratorOperatorCharm)
-    harness.begin()
-    harness.disable_hooks()
     entity_id = "https://login.staging.ubuntu.com"
     metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_config(
-        {
+    charm = MagicMock(
+        config={
             "entity_id": entity_id,
             "metadata_url": metadata_url,
         }
     )
-    charm_state = CharmState.from_charm(harness.charm)
+    charm_state = CharmState.from_charm(charm)
     saml_integrator = SamlIntegrator(charm_state=charm_state)
-    assert saml_integrator.entity_id == entity_id
-    assert saml_integrator.metadata_url == metadata_url
-    try:
+    with pytest.raises(CharmConfigInvalidError):
         saml_integrator.certificates
-        assert False
-    except CharmConfigInvalidError:
-        assert True
-    try:
+    with pytest.raises(CharmConfigInvalidError):
         saml_integrator.endpoints
-        assert False
-    except CharmConfigInvalidError:
-        assert True
 
 
 @patch("urllib.request.urlopen")
@@ -97,7 +73,7 @@ def test_saml_with_invalid_url(mock_urlopen):
         ("metadata_2.xml", "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Post"),
     ],
 )
-def test_saml_with_valid_metadata(mock_urlopen, metadata_file, binding):
+def test_saml_with_valid_metadata(urlopen_mock, metadata_file, binding):
     """
     arrange: mock the metadata contents so that they invalid.
     act: access the metadata properties.
@@ -108,23 +84,18 @@ def test_saml_with_valid_metadata(mock_urlopen, metadata_file, binding):
         cm.getcode.return_value = 200
         cm.read.return_value = metadata.read()
         cm.__enter__.return_value = cm
-        mock_urlopen.return_value = cm
+        urlopen_mock.return_value = cm
 
-        harness = Harness(SamlIntegratorOperatorCharm)
-        harness.begin()
-        harness.disable_hooks()
         entity_id = "https://login.staging.ubuntu.com"
         metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-        harness.update_config(
-            {
+        charm = MagicMock(
+            config={
                 "entity_id": entity_id,
                 "metadata_url": metadata_url,
             }
         )
-        charm_state = CharmState.from_charm(harness.charm)
+        charm_state = CharmState.from_charm(charm)
         saml_integrator = SamlIntegrator(charm_state=charm_state)
-        assert saml_integrator.entity_id == entity_id
-        assert saml_integrator.metadata_url == metadata_url
         assert saml_integrator.certificates == {
             (
                 "MIIDuzCCAqOgAwIBAgIJALRwYFkmH3k9MA0GCSqGSIb3DQEBCwUAMHQxCzAJBgNVBAYTAkdCMRMwEQYD"

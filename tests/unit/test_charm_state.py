@@ -3,10 +3,10 @@
 
 """CharmState unit tests."""
 
+import pytest
 import yaml
-from ops.testing import Harness
+from mock import MagicMock
 
-from charm import SamlIntegratorOperatorCharm
 from charm_state import KNOWN_CHARM_CONFIG, CharmConfigInvalidError, CharmState
 
 
@@ -23,22 +23,19 @@ def test_known_charm_config():
 
 def test_charm_state_from_charm():
     """
-    arrange: set up an configured charm
+    arrange: set up a configured charm
     act: access the status properties
     assert: the configuration is accessible from the state properties.
     """
-    harness = Harness(SamlIntegratorOperatorCharm)
-    harness.begin()
-    harness.disable_hooks()
     entity_id = "https://login.staging.ubuntu.com"
     metadata_url = "https://login.staging.ubuntu.com/saml/metadata"
-    harness.update_config(
-        {
+    charm = MagicMock(
+        config={
             "entity_id": entity_id,
             "metadata_url": metadata_url,
         }
     )
-    state = CharmState.from_charm(harness.charm)
+    state = CharmState.from_charm(charm)
     assert state.entity_id == entity_id
     assert state.metadata_url == metadata_url
 
@@ -49,10 +46,6 @@ def test_charm_state_from_charm_with_invalid_config():
     act: access the status properties
     assert: a CharmConfigInvalidError is raised.
     """
-    harness = Harness(SamlIntegratorOperatorCharm)
-    harness.begin()
-    try:
-        CharmState.from_charm(harness.charm)
-        assert False
-    except CharmConfigInvalidError:
-        assert True
+    charm = MagicMock(config={})
+    with pytest.raises(CharmConfigInvalidError):
+        CharmState.from_charm(charm)
