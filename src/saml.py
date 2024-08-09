@@ -58,7 +58,7 @@ class SamlIntegrator:  # pylint: disable=import-outside-toplevel
             with urllib.request.urlopen(
                 self._charm_state.metadata_url, timeout=10
             ) as resource:  # nosec
-                raw_data = resource.read().decode("utf-8")
+                raw_data = resource.read()
                 tree = etree.fromstring(raw_data)  # nosec
                 return tree
         except urllib.error.URLError as ex:
